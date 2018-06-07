@@ -2,8 +2,8 @@ package main
 
 import (
 	"bufio"
-	"net"
 	"fmt"
+	"net"
 )
 
 func main() {
@@ -18,7 +18,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
+		/*
+			Below part of code is sending a content to Client un comment to send data to TCP client
+		*/
+		/*io.WriteString(conn, "\nHello How are you doing? This is TCP Server\n")
+		fmt.Fprintln(conn, "How is your day?")
+		fmt.Fprintf(conn, "%v", "Well, I hope!")
+		conn.Close()*/
+		// handle basically handle incoming data from client.
 		go handle(conn)
 
 	}
@@ -27,7 +34,7 @@ func main() {
 func handle(conn net.Conn) {
 	scanner := bufio.NewScanner(conn)
 
-	for scanner.Scan(){
+	for scanner.Scan() {
 		ln := scanner.Text()
 		fmt.Println(ln)
 		fmt.Fprintf(conn, "I heard you say: %s\n", ln)
