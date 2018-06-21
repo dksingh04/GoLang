@@ -1,0 +1,1 @@
+Reading this file using go and then storing the same on to server location.
