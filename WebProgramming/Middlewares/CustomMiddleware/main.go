@@ -4,6 +4,9 @@
 
 	In context of Java, you can think of Middleware as a ServletFilter, or AOP intercepter we write using Spring AOP
 	framework.
+
+	There are third party packages which provides middleware functionality, for e.g. Gorilla's mux package which prvide http
+	routing features along with middleware support (http://www.gorillatoolkit.org/pkg/mux).
 */
 
 package main
