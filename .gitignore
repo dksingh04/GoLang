@@ -1,2 +1,4 @@
 *.exe
 *.pem
+.vscode
+debug
