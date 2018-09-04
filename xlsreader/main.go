@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
 	"github.com/tealeg/xlsx"
 )
 
@@ -22,13 +23,20 @@ func main() {
 		fmt.Fprintln(os.Stderr, "Unable to parse spreadSheet")
 	}
 	for _, sheet := range xlFile.Sheets {
-		for row := range sheet.Rows {
-			cell := sheet.Cell(row, *cellNum)
+		for rowIndex, row := range sheet.Rows {
+			cell := sheet.Cell(rowIndex, *cellNum)
+			//cells := row.Cells
+			style := cell.GetStyle()
 			text := strings.TrimLeft(cell.String(), " ")
+			chCell := row.AddCell()
+			chCell.SetStyle(style)
+			//chCell.Cell(rowIndex, len(cells))
+			chCell.SetString(text[:1])
 			shopMap[text[:1]] = append(shopMap[text[:1]], text)
 		}
 	}
-
+	xlFile.Save("updated.xlsx")
+	// Creating new File with character starting with
 	file := xlsx.NewFile()
 
 	newSheet, err := file.AddSheet("output")
@@ -42,7 +50,7 @@ func main() {
 		cell1.Value = key
 		cell2 := row.AddCell()
 		cell2.Value = strings.Join(values, ",")
-		
+
 	}
 
 	err = file.Save(*outputFNamePath)
