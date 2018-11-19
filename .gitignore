@@ -2,3 +2,5 @@
 *.pem
 .vscode
 debug
+*.a
+*.o
