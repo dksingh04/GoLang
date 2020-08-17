@@ -14,4 +14,5 @@ func main() {
 	fmt.Println("Type: ", v.Type())
 	fmt.Println("Kind of float 64: ", v.Kind() == reflect.Float64)
 	fmt.Println("Content: ", v.Float())
+	fmt.Printf("Value from relect to Interface Value: %7.1e\n", v.Interface())
 }
