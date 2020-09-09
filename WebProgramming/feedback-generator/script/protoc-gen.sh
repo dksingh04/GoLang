@@ -1,1 +1,1 @@
-protoc -I=api/proto/v1 --go_out=pkg/api api/proto/v1/*.proto
+protoc -I=api/proto/v1 --go_out=plugins=grpc:pkg/api api/proto/v1/*.proto
