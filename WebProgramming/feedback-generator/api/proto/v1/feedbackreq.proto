@@ -54,8 +54,9 @@ message FeedbackResponse {
     string api = 1;
     int32 status_code = 2;
     //unique request id for created request
-    //Feedback feedback_res = 3;
+    Feedback feedback_res = 3;
     string request_id = 4;
+    string message = 5;
 }
 message ReadFeedbackRequest {
     string api = 1;
@@ -84,7 +85,6 @@ message SimpleResponse {
     string api = 1;
     string feedback_res = 2;
 }
-
 
 service FeedbackService {
     rpc Create(FeedbackRequest) returns (FeedbackResponse);

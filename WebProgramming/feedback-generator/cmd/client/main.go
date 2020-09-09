@@ -98,7 +98,7 @@ func main() {
 		jsonReq, errMarshaling := marshaler.MarshalToString(&fReq)
 		if errMarshaling != nil {
 			logger.WithFields(logrus.Fields{
-				"reqMessage": fReq,
+				"reqMessage": fReq.FeedbackReq,
 				"status":     500,
 				"Error":      err,
 			}).Fatalln("Error in Transforming Request message to Json String!")

@@ -2,9 +2,11 @@ package v1
 
 import (
 	"context"
-	"fmt"
-
 	v1 "feedback-generator/pkg/api/v1/feedbackreqpb"
+	"fmt"
+	"net/http"
+
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -52,25 +54,57 @@ func (fs *feedbackServiceServer) Create(ctx context.Context, req *v1.FeedbackReq
 	//Insert created FeedbackRequest
 	result, err := coll.InsertOne(ctx, fReq)
 
-	if err != nil {
+	if result.InsertedID == nil && err != nil {
 		fs.logger.WithFields(logrus.Fields{
 			"request": fReq,
-			"status":  500,
+			"status":  http.StatusInternalServerError,
 			"Error":   err,
 		}).Error("Unable Insert the Document!")
+
+		fRes := &v1.FeedbackResponse{
+			Api:         "v1",
+			StatusCode:  http.StatusInternalServerError,
+			RequestId:   "",
+			Message:     fmt.Sprintln(err),
+			FeedbackRes: nil,
+		}
+		return fRes, nil
 	}
-	// Create and return Response
+
+	fResult := coll.FindOne(ctx, bson.D{primitive.E{Key: "id", Value: fReq.Id}})
+	feedbackRes := v1.Feedback{}
+
+	if err := fResult.Decode(&feedbackRes); err != nil {
+		logrus.Errorf("Unable to read document for request id: %v", fReq.Id)
+		return nil, nil
+	}
+
 	fRes := &v1.FeedbackResponse{
-		Api:        "v1",
-		StatusCode: 201,
-		RequestId:  result.InsertedID.(primitive.ObjectID).Hex(),
+		Api:         "v1",
+		StatusCode:  http.StatusCreated,
+		RequestId:   fReq.Id,
+		Message:     "Document Inserted Successfuly",
+		FeedbackRes: &feedbackRes,
 	}
 	return fRes, nil
 }
 
 func (fs *feedbackServiceServer) Read(ctx context.Context, req *v1.ReadFeedbackRequest) (*v1.FeedbackResponse, error) {
-	//TODO implementation
-	return new(v1.FeedbackResponse), nil
+	coll := fs.db.Collection("feedback_request")
+	fResult := coll.FindOne(ctx, bson.D{primitive.E{Key: "id", Value: req.RequestId}})
+	feedbackRes := v1.Feedback{}
+	if err := fResult.Decode(&feedbackRes); err != nil {
+		logrus.Errorf("Unable to read document for request id: %v", req.RequestId)
+		return nil, nil
+	}
+	fRes := &v1.FeedbackResponse{
+		Api:         "v1",
+		StatusCode:  http.StatusCreated,
+		RequestId:   req.RequestId,
+		Message:     "Document Inserted Successfuly",
+		FeedbackRes: &feedbackRes,
+	}
+	return fRes, nil
 }
 func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context, req *v1.FeedbackRequest) (*v1.GeneratedFeedbackResponse, error) {
 	//TODO implementation
