@@ -93,25 +93,43 @@ func (fs *feedbackServiceServer) Read(ctx context.Context, req *v1.ReadFeedbackR
 	coll := fs.db.Collection("feedback_request")
 	fResult := coll.FindOne(ctx, bson.D{primitive.E{Key: "id", Value: req.RequestId}})
 	feedbackRes := v1.Feedback{}
+	fRes := &v1.FeedbackResponse{}
+	fRes.Api = "v1"
+	fRes.RequestId = req.RequestId
+
 	if err := fResult.Decode(&feedbackRes); err != nil {
 		logrus.Errorf("Unable to read document for request id: %v", req.RequestId)
-		return nil, nil
+		fRes.StatusCode = http.StatusNotFound
+		fRes.Message = fmt.Sprint(fResult.Decode(bson.M{}))
+		return fRes, nil
 	}
-	fRes := &v1.FeedbackResponse{
-		Api:         "v1",
-		StatusCode:  http.StatusCreated,
-		RequestId:   req.RequestId,
-		Message:     "Document Inserted Successfuly",
-		FeedbackRes: &feedbackRes,
-	}
+
+	fRes.StatusCode = http.StatusCreated
+	fRes.Message = "Document Inserted Successfuly"
+	fRes.FeedbackRes = &feedbackRes
+
 	return fRes, nil
 }
 func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context, req *v1.FeedbackRequest) (*v1.GeneratedFeedbackResponse, error) {
-	//TODO implementation
+
 	return new(v1.GeneratedFeedbackResponse), nil
 }
 
-func (fs *feedbackServiceServer) Delete(ctx context.Context, delreq *v1.DeleteFeedbackRequest) (*v1.DeleteFeedbackResponse, error) {
-	//TODO implementation
-	return new(v1.DeleteFeedbackResponse), nil
+func (fs *feedbackServiceServer) Delete(ctx context.Context, req *v1.DeleteFeedbackRequest) (*v1.DeleteFeedbackResponse, error) {
+	coll := fs.db.Collection("feedback_request")
+	result, err := coll.DeleteOne(ctx, bson.D{primitive.E{Key: "id", Value: req.RequestId}})
+
+	if err != nil {
+		fs.logger.Errorf("Unable to delete document for request id: %v Deleted Count: %v", req.RequestId, result.DeletedCount)
+		return nil, nil
+	}
+	var fRes = &v1.DeleteFeedbackResponse{}
+	fRes.Api = "v1"
+	if result.DeletedCount == 0 {
+		fRes.StatusCode = http.StatusNotFound
+	} else {
+		fRes.StatusCode = http.StatusOK
+	}
+
+	return fRes, nil
 }

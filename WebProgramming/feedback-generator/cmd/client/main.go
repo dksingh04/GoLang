@@ -5,12 +5,14 @@ import (
 	"feedback-generator/internal/config"
 	f "feedback-generator/pkg/api/v1/feedbackreqpb"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 )
 
@@ -21,6 +23,12 @@ const (
 
 var serverAddr = "localhost:9090"
 
+type clientConfig struct {
+	logger     *logrus.Logger
+	clientConn *grpc.ClientConn
+	client     f.FeedbackServiceClient
+}
+
 func main() {
 	logger, err := config.CreateDefaultLogConfiguration()
 	if err != nil {
@@ -30,7 +38,7 @@ func main() {
 			"Error":    err,
 		}).Fatal("Unable to read the Config file given!")
 	}
-	//serverAddr := flag.String("server", "localhost:9090", "The server address in the format of host:port")
+
 	//Connect to grpc server
 	conn, err := grpc.Dial("localhost:9090", grpc.WithInsecure())
 	defer conn.Close()
@@ -43,6 +51,103 @@ func main() {
 	}
 
 	client := f.NewFeedbackServiceClient(conn)
+
+	cc := &clientConfig{
+		logger:     logger,
+		clientConn: conn,
+		client:     client,
+	}
+
+	app := cli.NewApp()
+
+	app.EnableBashCompletion = true
+	app.Name = "feedback-generator"
+	app.Authors = []*cli.Author{
+		&cli.Author{
+			Name:  "Deepak Singh",
+			Email: "deepaksingh04@gmail.com",
+		},
+	}
+	app.Copyright = "(c) 2020 feedback-generator"
+	app.Commands = []*cli.Command{
+		{
+			Name:    "create",
+			Aliases: []string{"c"},
+			Usage:   "Create Feedback Request",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "create",
+					Aliases: []string{"c"},
+					Usage:   "-c [requestID]",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				cc.createFeedbackRequest()
+				return nil
+			},
+		},
+		{
+			Name:    "read",
+			Aliases: []string{"r"},
+			Usage:   "Read Feedback Request",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "read",
+					Aliases: []string{"r"},
+					Usage:   "-r [requestID]",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				requestID := c.String("read")
+				cc.readFeedbackRequest(requestID)
+				return nil
+			},
+		},
+		{
+			Name:    "delete",
+			Aliases: []string{"d"},
+			Usage:   "Delete created request",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "delete",
+					Aliases: []string{"d"},
+					Usage:   "-d [requestID]",
+				},
+			},
+			Action: func(c *cli.Context) error {
+				requestID := c.String("delete")
+				cc.deleteFeedbackRequest(requestID)
+				return nil
+			},
+		},
+		{
+			Name:    "generate",
+			Aliases: []string{"g"},
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:    "gen",
+					Aliases: []string{"g"},
+					Usage:   "-g [requestID]",
+				},
+			},
+			Usage: "Generate feedback for the created request",
+			Action: func(c *cli.Context) error {
+				requestID := c.String("gen")
+				cc.generateFeedbackResponse(requestID)
+				return nil
+			},
+		},
+	}
+
+	errs := app.Run(os.Args)
+
+	if errs != nil {
+		logger.Fatalf("Error in initiating commands %s", errs)
+	}
+
+}
+
+func (cc *clientConfig) createFeedbackRequest() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -90,24 +195,51 @@ func main() {
 	}
 
 	//fRes, err := client.CreateSimpleRequest(ctx, &sReq)
-	fRes, err := client.Create(ctx, &fReq)
+	fRes, err := cc.client.Create(ctx, &fReq)
 	fmt.Println(fRes)
-
+	//TODO this can be moved to common method
 	if err != nil {
 		marshaler := jsonpb.Marshaler{}
 		jsonReq, errMarshaling := marshaler.MarshalToString(&fReq)
 		if errMarshaling != nil {
-			logger.WithFields(logrus.Fields{
+			cc.logger.WithFields(logrus.Fields{
 				"reqMessage": fReq.FeedbackReq,
 				"status":     500,
 				"Error":      err,
 			}).Fatalln("Error in Transforming Request message to Json String!")
 		}
-		logger.WithFields(logrus.Fields{
+		cc.logger.WithFields(logrus.Fields{
 			"request": jsonReq,
 			"status":  500,
 			"Error":   err,
 		}).Fatalln("Unable to connect to grpc server")
 	}
+}
 
+func (cc *clientConfig) readFeedbackRequest(requestID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	rf := &f.ReadFeedbackRequest{
+		Api:       "v1",
+		RequestId: requestID,
+	}
+	fRes, err := cc.client.Read(ctx, rf)
+	fmt.Println(fRes)
+	fmt.Println(err)
+}
+
+func (cc *clientConfig) deleteFeedbackRequest(requestID string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	drf := &f.DeleteFeedbackRequest{
+		Api:       "v1",
+		RequestId: requestID,
+	}
+	dfRes, err := cc.client.Delete(ctx, drf)
+
+	fmt.Println(dfRes, err)
+}
+
+func (cc *clientConfig) generateFeedbackResponse(requestID string) {
+	fmt.Println(requestID)
 }
