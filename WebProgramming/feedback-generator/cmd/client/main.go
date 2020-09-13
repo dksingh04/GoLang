@@ -237,9 +237,17 @@ func (cc *clientConfig) deleteFeedbackRequest(requestID string) {
 	}
 	dfRes, err := cc.client.Delete(ctx, drf)
 
-	fmt.Println(dfRes, err)
+	fmt.Println(dfRes)
+	fmt.Println(err)
 }
 
 func (cc *clientConfig) generateFeedbackResponse(requestID string) {
 	fmt.Println(requestID)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	feedback := &f.Feedback{Id: requestID}
+	fReq := &f.FeedbackRequest{Api: "v1", FeedbackReq: feedback}
+	fRes, err := cc.client.GenerateFeedbackForRequest(ctx, fReq)
+	fmt.Println(fRes)
+	fmt.Println(err)
 }
