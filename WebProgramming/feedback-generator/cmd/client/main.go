@@ -173,11 +173,12 @@ func (cc *clientConfig) createFeedbackRequest() {
 			MyComments:              "Good Candidate",
 			TechSkills: []*f.TechSkill{
 				&f.TechSkill{
-					SkillName:        "Java",
-					ExperienceRating: 3,
-					SkillRating:      3,
-					IsHandsOn:        true,
-					QuestionsAsked:   "OOPs, Mutithreading, Exception Handling, Collection classes etc.",
+					SkillName:            "Java",
+					ExperienceRating:     3,
+					SkillRating:          3,
+					IsHandsOn:            true,
+					InDepthUnderstanding: true,
+					QuestionsAsked:       "OOPs, Mutithreading, Exception Handling, Collection classes etc.",
 					Topics: []*f.Topic{
 						&f.Topic{
 							TopicName:                 "OOPs",

@@ -51,7 +51,7 @@ var feedbackMapping = map[string]string{
 	"e-5":                      "Candidate has extensive experience and can work independently",
 	"HaveTheoretical":          "theoretically clear and explained the concepts of '%v' very well",
 	"NoTheoretical":            "not clear with theoretical part of '%v', unable to explain '%v'",
-	"InDepthUnderstanding":     "deep understanding of the technology and explained all the concepts discussed (for e.g. %s) with example",
+	"InDepthUnderstanding":     "deep understanding of the technology and explained all the concepts discussed (for e.g. %s)",
 	"AbleToExplain":            "theoretically clear and explained the concepts of '%v' very well with example",
 	"PartiallyExplained":       "theoretically fine and partially able to explain the concepts, missing in-depth understanding of the concept, this will cause challenge in debugging/troubleshooting the problems",
 	"Hands-On":                 "hands-on with the skill",
@@ -245,13 +245,13 @@ func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context,
 					}
 
 					if topic.IsHandsOn {
-						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s.\n", candidate, is, fmt.Sprintf(feedbackMapping["Hands-On-Topic"], topic.TopicName))
+						sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, is, fmt.Sprintf(feedbackMapping["Hands-On-Topic"], topic.TopicName))
 					}
 				}
 
 				if tech.InDepthUnderstanding {
 					//fmt.Println(tech.QuestionsAsked)
-					sFeedback.FeedbackText += fmt.Sprintf("%s %s %s. \n", candidate, has, fmt.Sprintf(feedbackMapping["InDepthUnderstanding"], tech.QuestionsAsked))
+					sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s. \n", candidate, has, fmt.Sprintf(feedbackMapping["InDepthUnderstanding"], tech.QuestionsAsked))
 				}
 
 				if tech.IsHandsOn {
