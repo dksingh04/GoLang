@@ -51,7 +51,7 @@ var feedbackMapping = map[string]string{
 	"e-5":                      "Candidate has extensive experience and can work independently",
 	"HaveTheoretical":          "theoretically clear and explained the concepts of '%v' very well",
 	"NoTheoretical":            "not clear with theoretical part of '%v', unable to explain '%v'",
-	"InDepthUnderstanding":     "deep understanding of the technology and explained all the concepts with example",
+	"InDepthUnderstanding":     "deep understanding of the technology and explained all the concepts discussed (for e.g. %s) with example",
 	"AbleToExplain":            "theoretically clear and explained the concepts of '%v' very well with example",
 	"PartiallyExplained":       "theoretically fine and partially able to explain the concepts, missing in-depth understanding of the concept, this will cause challenge in debugging/troubleshooting the problems",
 	"Hands-On":                 "hands-on with the skill",
@@ -229,23 +229,29 @@ func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context,
 				for _, topic := range tech.Topics {
 					sFeedback.FeedbackText += fmt.Sprintf("\n%s:\n", topic.TopicName)
 					if topic.IsAbleToExaplain {
-						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s ", candidate, was, fmt.Sprintf(feedbackMapping["AbleToExplain"], topic.TopicName))
-						if topic.InDepthUnderstanding {
-							sFeedback.FeedbackText += fmt.Sprintf("and have %s. \n", feedbackMapping["InDepthUnderstanding"])
-						}
+						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s.\n", candidate, was, fmt.Sprintf(feedbackMapping["AbleToExplain"], topic.TopicName))
 					} else if topic.PartiallyExplained {
 						sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, was, feedbackMapping["PartiallyExplained"])
-					} else if topic.IsScenarioCovered {
+					}
+					if topic.IsScenarioCovered {
 						if topic.IsAbleToExplainScenario {
 							sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, has, fmt.Sprintf(feedbackMapping["ScenarioExplained"], topic.WhatSceanrioQuestion))
 						} else {
 							sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, has, fmt.Sprintf(feedbackMapping["ScenarioNotExplained"], topic.WhatSceanrioQuestion))
 						}
 					}
+					if topic.InDepthUnderstanding {
+						sFeedback.FeedbackText += fmt.Sprintf("%s %s %s. \n", candidate, has, fmt.Sprintf(feedbackMapping["InDepthUnderstanding"], topic.TheoryQuestion))
+					}
 
 					if topic.IsHandsOn {
 						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s.\n", candidate, is, fmt.Sprintf(feedbackMapping["Hands-On-Topic"], topic.TopicName))
 					}
+				}
+
+				if tech.InDepthUnderstanding {
+					//fmt.Println(tech.QuestionsAsked)
+					sFeedback.FeedbackText += fmt.Sprintf("%s %s %s. \n", candidate, has, fmt.Sprintf(feedbackMapping["InDepthUnderstanding"], tech.QuestionsAsked))
 				}
 
 				if tech.IsHandsOn {

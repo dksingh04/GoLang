@@ -177,11 +177,13 @@ func (cc *clientConfig) createFeedbackRequest() {
 					ExperienceRating: 3,
 					SkillRating:      3,
 					IsHandsOn:        true,
+					QuestionsAsked:   "OOPs, Mutithreading, Exception Handling, Collection classes etc.",
 					Topics: []*f.Topic{
 						&f.Topic{
 							TopicName:                 "OOPs",
 							HaveTheroreticalKnowledge: true,
 							InDepthUnderstanding:      true,
+							TheoryQuestion:            "Encapsulation, Inheritance, Polymorphism etc.",
 							IsAbleToExaplain:          true,
 							IsAbleToExplainScenario:   true,
 							IsScenarioCovered:         true,
