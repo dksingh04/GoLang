@@ -227,6 +227,7 @@ func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context,
 				sFeedback.FeedbackText += fmt.Sprintf("\n%s\n", topicsCovered)
 				//Build topics feedback
 				for _, topic := range tech.Topics {
+					sFeedback.FeedbackText += fmt.Sprintf("\n%s:\n", topic.TopicName)
 					if topic.IsAbleToExaplain {
 						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s ", candidate, was, fmt.Sprintf(feedbackMapping["AbleToExplain"], topic.TopicName))
 						if topic.InDepthUnderstanding {
