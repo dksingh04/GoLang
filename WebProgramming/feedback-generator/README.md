@@ -1,23 +1,23 @@
 ## Feedback Generator for the Interviews
 
-## Build server
+### Build server
 make build
 
-## Build client
+### Build client
 make build-client
 
-## Run server
+### Run server
 ./bin/feedback-generator
 
-## Run client
-# Create Feedback
+### Run client
+#### Create Feedback
 ./bin/feedback-client c
 
-# Delete feedback
+#### Delete feedback
 ./bin/feedback-client d -d [request-id]
 
-# Read feedback
+#### Read feedback
 ./bin/feedback-client r -r [request-id]
 
-# Generate Feedback from the created request
+#### Generate Feedback from the created request
 ./bin/feedback-client g -g [request-id]
