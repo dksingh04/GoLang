@@ -24,11 +24,11 @@ message Feedback {
     string my_comments = 15;
     google.protobuf.Timestamp creatDate = 16;
     google.protobuf.Timestamp updateDate = 17;
-    bool is_whiteboard_asked = 18;
+    bool is_whiteboard_question_asked = 18;
     bool whiteboard_explained = 19;
     bool whiteboard_partial = 20;
-    string anywhiteboard_comment = 21;
-    string anycoding_comment = 22;
+    string any_whiteboard_comment = 21;
+    string any_coding_comment = 22;
     bool followed_coding_standards = 23;
 
 }
@@ -78,10 +78,23 @@ message DeleteFeedbackResponse {
     string api = 1;
     int32 status_code = 2;
 }
+message GenerateFeedbackRequest{
+    string api = 1;
+    Feedback feedback_req = 2;
+    string summary_note = 3;
+}
 
 message GeneratedFeedbackResponse {
     string api = 1;
-    string feedback_text = 2;
+    repeated SkillFeedback skill_feedback = 2;
+    int32 status_code = 3;
+    string message = 4;
+    string summary_text = 5;
+}
+
+message SkillFeedback{
+    string feedback_text = 1;
+    string skill = 2;
 }
 
 message SimpleRequest {
@@ -96,7 +109,7 @@ message SimpleResponse {
 service FeedbackService {
     rpc Create(FeedbackRequest) returns (FeedbackResponse);
     rpc Read(ReadFeedbackRequest) returns (FeedbackResponse);
-    rpc GenerateFeedbackForRequest(FeedbackRequest) returns (GeneratedFeedbackResponse);
+    rpc GenerateFeedbackForRequest(GenerateFeedbackRequest) returns (GeneratedFeedbackResponse);
     rpc Delete(DeleteFeedbackRequest) returns (DeleteFeedbackResponse);
 }
 

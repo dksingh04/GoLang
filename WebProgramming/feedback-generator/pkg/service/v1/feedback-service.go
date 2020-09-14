@@ -5,6 +5,7 @@ import (
 	v1 "feedback-generator/pkg/api/v1/feedbackreqpb"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -30,31 +31,33 @@ type feedbackServiceServer struct {
 var feedbackMapping = map[string]string{
 	"CodeCompiled":  "written compilable and executable code",
 	"PseudoCode":    "able to write pseudo code",
-	"AlgoEfficient": "it was efficient and candidate has considered space and Time complexity, while implementing the solution",
+	"AlgoEfficient": "it was efficient candidate has considered space and Time complexity, while implementing the solution",
+	"NotEfficient":  "it was not efficient, didn't considered or think of Time and space complexity",
 	//This will go in summary and skill comments
-	"Proxy":                "using proxy and someone else was giving Interview on behalf of him, since it was proxy hence I have done some basic discussion on each skill sets.",
-	"Whiteboard_explained": "in white-boarding session, candidate has performed very well, explained the solution with proper diagram and flow.",
-	"Whiteboard_partial":   "in white-boarding session, candidate was partially able to explain the solution",
-	"Coding_Standards":     "well-versed with coding standards and followed the same while writing the code",
-	"s-1":                  "substantial development in %v skil and have to work a lot, candidate was missing fundamentals",
-	"e-1":                  "no experience in this skill, unable to demonstrate his experience",
-	"s-2":                  "some training to bring competency up to standards, have some basic understanding but missing some other fundamentals",
-	"e-2":                  "limited experience, close supervision will be needed for him",
-	"s-3":                  "competent and can perform his task, no additional training is required at this time",
-	"e-3":                  "competent and can complete assignments with reasonable supervision",
-	"s-4":                  "above average, and competent in this skill, no training required",
-	"e-4":                  "considerable experience and can perform his tasks with very minimal supervision",
-	"s-5":                  "expert in this skill and can teach and mentor others in the team",
-	"e-5":                  "extensive experience and can work independently",
-	"HaveTheoretical":      "theoretically clear and explained the concepts of %v very well",
-	"NoTheoretical":        " not clear with theoretical part of %v(topic-name), unable to explain %v(theory question)",
-	"InDepthUnderstanding": "deep understanding of the concepts and explained the concepts with example",
-	"AbleToExplain":        "explained the concept very well with example",
-	"Partially Explained":  "able to partially explain the concepts, missing in-depth understanding of the concept, this will cause challenge in debugging/troubleshooting the problems",
-	"Hnads-On":             "hands-on with the skill",
-	"ScenarioQuestioned":   "I have covered scenarion questions",
-	"ScenarioExplained":    "explained the scenario question (%v) very well and how to solve the problem in such cases",
-	"ScenarioNotExplained": "unable to explain the scenario question (%v), seems to me not much hands-on in this skill",
+	"Proxy":                    "using proxy and someone else was giving Interview on behalf of him, since it was proxy hence I have done some basic discussion on each skill sets.",
+	"Whiteboard_explained":     "in white-boarding session, candidate has performed very well, explained the solution with proper diagram and flow.",
+	"Whiteboard_partial":       "in white-boarding session, candidate was partially able to explain the solution",
+	"Whiteboard_not_explained": "in white-boarding session, candidate was unable perform better, not able to solve the given problem at all",
+	"Coding_Standards":         "well-versed with coding standards and followed the same while writing the code",
+	"s-1":                      "Candidate needs substantial development and have to work a lot, candidate was missing fundamentals",
+	"e-1":                      "Candidate has no experience in this skill and was unable to demonstrate his experience",
+	"s-2":                      "Candidate needs some training to bring competency up to standards, have some basic understanding but missing some other fundamentals",
+	"e-2":                      "Candidate has limited experience, close supervision will be needed for him",
+	"s-3":                      "Candidate is competent and can perform his task, no additional training is required at this time",
+	"e-3":                      "Candidate is competent and can complete assignments with reasonable supervision",
+	"s-4":                      "Candidate is above average, and competent in this skill, no training required",
+	"e-4":                      "Candidate has considerable experience and can perform his tasks with very minimal supervision",
+	"s-5":                      "Candidate is expert in this skill and can teach and mentor others in the team",
+	"e-5":                      "Candidate has extensive experience and can work independently",
+	"HaveTheoretical":          "theoretically clear and explained the concepts of %v very well",
+	"NoTheoretical":            "not clear with theoretical part of %v(topic-name), unable to explain %v(theory question)",
+	"InDepthUnderstanding":     "deep understanding of the concepts and explained the concepts with example",
+	"AbleToExplain":            "explained the concept very well with example",
+	"Partially Explained":      "able to partially explain the concepts, missing in-depth understanding of the concept, this will cause challenge in debugging/troubleshooting the problems",
+	"Hnads-On":                 "hands-on with the skill",
+	"ScenarioQuestioned":       "I have covered scenarion questions",
+	"ScenarioExplained":        "explained the scenario question (%v) very well and how to solve the problem in such cases",
+	"ScenarioNotExplained":     "unable to explain the scenario question (%v), seems to me not much hands-on in this skill",
 }
 
 var candidate = "Candidate"
@@ -150,9 +153,87 @@ func (fs *feedbackServiceServer) Read(ctx context.Context, req *v1.ReadFeedbackR
 
 	return fRes, nil
 }
-func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context, req *v1.FeedbackRequest) (*v1.GeneratedFeedbackResponse, error) {
+func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context, req *v1.GenerateFeedbackRequest) (*v1.GeneratedFeedbackResponse, error) {
+	coll := fs.db.Collection("feedback_request")
+	fResult := coll.FindOne(ctx, bson.D{primitive.E{Key: "id", Value: req.FeedbackReq.Id}})
+	gfRes := &v1.GeneratedFeedbackResponse{}
+	gfRes.Api = "v1"
 
-	return new(v1.GeneratedFeedbackResponse), nil
+	fRes := v1.Feedback{}
+	if err := fResult.Decode(&fRes); err != nil {
+		logrus.Errorf("Unable to read document for request id: %v", req.FeedbackReq.Id)
+	}
+	var summaryText = req.SummaryNote + "\n\n"
+
+	if fRes.IsProxy {
+		summaryText += fmt.Sprintf("%s %s %s", candidate, was, feedbackMapping["Proxy"])
+	} else {
+		// Build feedback when coding is required.
+		// TODO refactored and move it into separate methods
+		if fRes.IsCodingRequired {
+			if fRes.IsCodeCompiled && fRes.IsAlgoEfficient {
+				summaryText += fmt.Sprintf("%s %s %s and %s.\n", candidate, has, feedbackMapping["CodeCompiled"], feedbackMapping["AlgoEfficient"])
+			} else if fRes.IsCodeCompiled && !fRes.IsAlgoEfficient {
+				summaryText += fmt.Sprintf("%s %s %s and %s.\n", candidate, has, feedbackMapping["CodeCompiled"], feedbackMapping["NotEfficient"])
+			} else {
+				if fRes.IsAbleToWritePseudoCode && fRes.IsAlgoEfficient {
+					summaryText += fmt.Sprintf("%s %s %s and %s.\n", candidate, was, feedbackMapping["PseudoCode"], feedbackMapping["AlgoEfficient"])
+				} else if fRes.IsAbleToWritePseudoCode && !fRes.IsAlgoEfficient {
+					summaryText += fmt.Sprintf("%s %s %s and %s.\n", candidate, has, feedbackMapping["PseudoCode"], feedbackMapping["NotEfficient"])
+				}
+			}
+
+			if fRes.FollowedCodingStandards {
+				summaryText += fmt.Sprintf("%s %s %s.\n", candidate, was, feedbackMapping["Coding_Standards"])
+			}
+			if fRes.AnyCodingComment != "" {
+				summaryText += fmt.Sprintf("%s.\n", fRes.AnyCodingComment)
+			}
+
+		}
+		// Build feedback when Whiteboarding is required
+		// TODO refactored and move it into separate methods
+		if fRes.IsWhiteboardingRequired && fRes.IsWhiteboardQuestionAsked {
+			if fRes.WhiteboardExplained {
+				summaryText += fmt.Sprintf("%s %s.\n", candidate, feedbackMapping["Whiteboard_explained"])
+			} else if fRes.WhiteboardPartial {
+				summaryText += fmt.Sprintf("%s %s.\n", candidate, feedbackMapping["Whiteboard_explained"])
+			} else {
+				summaryText += fmt.Sprintf("%s %s.\n", candidate, feedbackMapping["Whiteboard_not_explained"])
+			}
+		}
+
+		if fRes.MyComments != "" {
+			summaryText += fmt.Sprintf("%s\n", fRes.MyComments)
+		}
+
+		// Build skill feedback
+		// TODO refactored and move it into separate methods
+		var sFeedbackSlice = make([]*v1.SkillFeedback, 5)
+		for _, tech := range fRes.TechSkills {
+			if fRes.IsProxy {
+				sFeedbackSlice = append(sFeedbackSlice, &v1.SkillFeedback{
+					Skill:        tech.SkillName,
+					FeedbackText: fmt.Sprintf("%s %s %s.\n", candidate, was, feedbackMapping["Proxy"]),
+				})
+			} else {
+				sFeedbackSlice = append(sFeedbackSlice, &v1.SkillFeedback{
+					Skill:        tech.SkillName,
+					FeedbackText: fmt.Sprintf("%s. %s.\n", feedbackMapping["s-"+strconv.FormatInt(int64(tech.SkillRating), 10)], feedbackMapping["e-"+strconv.FormatInt(int64(tech.ExperienceRating), 10)]),
+				})
+
+			}
+		}
+		gfRes.SkillFeedback = sFeedbackSlice
+	}
+
+	//gfRes.SkillFeedback
+	gfRes.SummaryText = summaryText
+	gfRes.StatusCode = http.StatusOK
+
+	gfRes.Message = "Generated feedback successfully"
+
+	return gfRes, nil
 }
 
 func (fs *feedbackServiceServer) Delete(ctx context.Context, req *v1.DeleteFeedbackRequest) (*v1.DeleteFeedbackResponse, error) {

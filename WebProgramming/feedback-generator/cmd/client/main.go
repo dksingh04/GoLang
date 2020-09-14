@@ -246,8 +246,9 @@ func (cc *clientConfig) generateFeedbackResponse(requestID string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	feedback := &f.Feedback{Id: requestID}
-	fReq := &f.FeedbackRequest{Api: "v1", FeedbackReq: feedback}
+	fReq := &f.GenerateFeedbackRequest{Api: "v1", FeedbackReq: feedback, SummaryNote: "Summary Notes"}
 	fRes, err := cc.client.GenerateFeedbackForRequest(ctx, fReq)
-	fmt.Println(fRes)
+	fmt.Printf(fRes.SummaryText)
+	fmt.Printf(fRes.SkillFeedback[0].FeedbackText)
 	fmt.Println(err)
 }
