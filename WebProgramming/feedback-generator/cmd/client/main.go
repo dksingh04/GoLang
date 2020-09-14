@@ -176,9 +176,10 @@ func (cc *clientConfig) createFeedbackRequest() {
 					SkillName:        "Java",
 					ExperienceRating: 3,
 					SkillRating:      3,
+					IsHandsOn:        true,
 					Topics: []*f.Topic{
 						&f.Topic{
-							TopicName:                 "OOPs concept",
+							TopicName:                 "OOPs",
 							HaveTheroreticalKnowledge: true,
 							InDepthUnderstanding:      true,
 							IsAbleToExaplain:          true,

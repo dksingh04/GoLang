@@ -38,6 +38,7 @@ message TechSkill {
     int32 skill_rating = 2;
     int32 experience_rating = 3;
     repeated Topic topics = 4;
+    bool is_hands_on = 5;
     
 }
 

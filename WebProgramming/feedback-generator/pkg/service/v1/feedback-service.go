@@ -49,13 +49,14 @@ var feedbackMapping = map[string]string{
 	"e-4":                      "Candidate has considerable experience and can perform his tasks with very minimal supervision",
 	"s-5":                      "Candidate is expert in this skill and can teach and mentor others in the team",
 	"e-5":                      "Candidate has extensive experience and can work independently",
-	"HaveTheoretical":          "theoretically clear and explained the concepts of %v very well",
-	"NoTheoretical":            "not clear with theoretical part of %v(topic-name), unable to explain %v(theory question)",
-	"InDepthUnderstanding":     "deep understanding of the concepts and explained the concepts with example",
-	"AbleToExplain":            "explained the concept very well with example",
-	"Partially Explained":      "able to partially explain the concepts, missing in-depth understanding of the concept, this will cause challenge in debugging/troubleshooting the problems",
-	"Hnads-On":                 "hands-on with the skill",
-	"ScenarioQuestioned":       "I have covered scenarion questions",
+	"HaveTheoretical":          "theoretically clear and explained the concepts of '%v' very well",
+	"NoTheoretical":            "not clear with theoretical part of '%v', unable to explain '%v'",
+	"InDepthUnderstanding":     "deep understanding of the technology and explained all the concepts with example",
+	"AbleToExplain":            "theoretically clear and explained the concepts of '%v' very well with example",
+	"PartiallyExplained":       "theoretically fine and partially able to explain the concepts, missing in-depth understanding of the concept, this will cause challenge in debugging/troubleshooting the problems",
+	"Hands-On":                 "hands-on with the skill",
+	"Hands-On-Topic":           "hands-on in this topic (%v)",
+	"ScenarioQuestioned":       "I have covered some scenarion questions",
 	"ScenarioExplained":        "explained the scenario question (%v) very well and how to solve the problem in such cases",
 	"ScenarioNotExplained":     "unable to explain the scenario question (%v), seems to me not much hands-on in this skill",
 }
@@ -66,7 +67,7 @@ var has = "has"
 var needs = "needs"
 var is = "is"
 var can = "can"
-var topicsCovered = "We have covered following topics and this is how candidate has performed:"
+var topicsCovered = "We have covered following topics:"
 
 // NewFeedbackServiceServer creates FeedbackServiceServer
 func NewFeedbackServiceServer(client *mongo.Client, db *mongo.Database, logger *logrus.Logger) v1.FeedbackServiceServer {
@@ -218,10 +219,38 @@ func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context,
 					FeedbackText: fmt.Sprintf("%s %s %s.\n", candidate, was, feedbackMapping["Proxy"]),
 				})
 			} else {
-				sFeedbackSlice = append(sFeedbackSlice, &v1.SkillFeedback{
+				sFeedback := &v1.SkillFeedback{
 					Skill:        tech.SkillName,
 					FeedbackText: fmt.Sprintf("%s. %s.\n", feedbackMapping["s-"+strconv.FormatInt(int64(tech.SkillRating), 10)], feedbackMapping["e-"+strconv.FormatInt(int64(tech.ExperienceRating), 10)]),
-				})
+				}
+				sFeedbackSlice = append(sFeedbackSlice, sFeedback)
+				sFeedback.FeedbackText += fmt.Sprintf("\n%s\n", topicsCovered)
+				//Build topics feedback
+				for _, topic := range tech.Topics {
+					if topic.IsAbleToExaplain {
+						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s ", candidate, was, fmt.Sprintf(feedbackMapping["AbleToExplain"], topic.TopicName))
+						if topic.InDepthUnderstanding {
+							sFeedback.FeedbackText += fmt.Sprintf("and have %s. \n", feedbackMapping["InDepthUnderstanding"])
+						}
+					} else if topic.PartiallyExplained {
+						sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, was, feedbackMapping["PartiallyExplained"])
+					} else if topic.IsScenarioCovered {
+						if topic.IsAbleToExplainScenario {
+							sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, has, fmt.Sprintf(feedbackMapping["ScenarioExplained"], topic.WhatSceanrioQuestion))
+						} else {
+							sFeedback.FeedbackText += fmt.Sprintf("%s %s %s.\n", candidate, has, fmt.Sprintf(feedbackMapping["ScenarioNotExplained"], topic.WhatSceanrioQuestion))
+						}
+					}
+
+					if topic.IsHandsOn {
+						sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s.\n", candidate, is, fmt.Sprintf(feedbackMapping["Hands-On-Topic"], topic.TopicName))
+					}
+				}
+
+				if tech.IsHandsOn {
+					sFeedback.FeedbackText += fmt.Sprintf("\n%s %s %s.\n", candidate, is, feedbackMapping["Hands-On"])
+				}
+
 			}
 		}
 		gfRes.SkillFeedback = sFeedbackSlice
