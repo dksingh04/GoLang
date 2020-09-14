@@ -248,7 +248,13 @@ func (cc *clientConfig) generateFeedbackResponse(requestID string) {
 	feedback := &f.Feedback{Id: requestID}
 	fReq := &f.GenerateFeedbackRequest{Api: "v1", FeedbackReq: feedback, SummaryNote: "Summary Notes"}
 	fRes, err := cc.client.GenerateFeedbackForRequest(ctx, fReq)
+	fmt.Println("Professional Summary:")
+	fmt.Println("")
 	fmt.Printf(fRes.SummaryText)
+	fmt.Println("")
+	fmt.Printf("%s:\n\n", fRes.SkillFeedback[0].Skill)
 	fmt.Printf(fRes.SkillFeedback[0].FeedbackText)
+	fmt.Println("")
+	fmt.Println("Error:")
 	fmt.Println(err)
 }

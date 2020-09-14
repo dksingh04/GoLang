@@ -209,8 +209,9 @@ func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context,
 
 		// Build skill feedback
 		// TODO refactored and move it into separate methods
-		var sFeedbackSlice = make([]*v1.SkillFeedback, 5)
+		var sFeedbackSlice = []*v1.SkillFeedback{}
 		for _, tech := range fRes.TechSkills {
+			fmt.Println(tech.SkillName)
 			if fRes.IsProxy {
 				sFeedbackSlice = append(sFeedbackSlice, &v1.SkillFeedback{
 					Skill:        tech.SkillName,
@@ -221,13 +222,11 @@ func (fs *feedbackServiceServer) GenerateFeedbackForRequest(ctx context.Context,
 					Skill:        tech.SkillName,
 					FeedbackText: fmt.Sprintf("%s. %s.\n", feedbackMapping["s-"+strconv.FormatInt(int64(tech.SkillRating), 10)], feedbackMapping["e-"+strconv.FormatInt(int64(tech.ExperienceRating), 10)]),
 				})
-
 			}
 		}
 		gfRes.SkillFeedback = sFeedbackSlice
 	}
 
-	//gfRes.SkillFeedback
 	gfRes.SummaryText = summaryText
 	gfRes.StatusCode = http.StatusOK
 
